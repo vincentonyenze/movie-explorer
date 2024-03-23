@@ -2,18 +2,38 @@ import { useState } from "react";
 import { hasToken } from "./config.js";
 import Header from "./components/Header.jsx";
 import SearchBar from "./components/SearchBar.jsx";
+import MovieGrid from "./components/MovieGrid.jsx";
+import { sampleMovies } from "./data/sampleMovies.js";
 
 function App() {
   // Which page is showing. No router yet (that's Project 17): one piece of
   // state is enough to switch between two views.
   const [view, setView] = useState("discover"); // "discover" | "favourites"
   const [query, setQuery] = useState("");
+  // Saved movies, newest first. Whole movie objects, not just ids, so the
+  // Favourites view can show them without asking the API again.
+  // (Only in memory for now: saving them comes in Step 12.)
+  const [favourites, setFavourites] = useState([]);
 
   const isDiscover = view === "discover";
 
+  // Derived: a Set of saved ids, so every card can check "is this saved?"
+  // with one quick has(), instead of searching the list each time
+  const favouriteIds = new Set(favourites.map((movie) => movie.id));
+
+  function toggleFavourite(movie) {
+    setFavourites((current) =>
+      current.some((saved) => saved.id === movie.id)
+        ? current.filter((saved) => saved.id !== movie.id)
+        : [movie, ...current]
+    );
+  }
+
+  const movies = isDiscover ? sampleMovies : favourites;
+
   return (
     <div className="app">
-      <Header view={view} onViewChange={setView} favouriteCount={0} />
+      <Header view={view} onViewChange={setView} favouriteCount={favourites.length} />
 
       <main className="page container">
         <div className="page__header">
@@ -31,9 +51,11 @@ function App() {
             <strong>No TMDB token found.</strong> Copy <code>.env.example</code> to{" "}
             <code>.env.local</code>, paste your token, then restart <code>npm run dev</code>.
           </div>
+        ) : movies.length > 0 ? (
+          <MovieGrid movies={movies} favouriteIds={favouriteIds} onToggleFavourite={toggleFavourite} />
         ) : (
           <div className="placeholder">
-            <p>{isDiscover ? "Movies will appear here (Step 3)." : "Saved movies will appear here (Step 12)."}</p>
+            <p>No favourites yet. Tap ♡ on a movie to save it here.</p>
           </div>
         )}
       </main>

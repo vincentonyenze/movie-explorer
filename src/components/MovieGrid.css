@@ -1,0 +1,9 @@
+/* As many columns as fit, each at least 10rem wide (about 2 on a phone,
+   6 on a wide screen), with no media queries needed */
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(10rem, 40vw), 1fr));
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+  padding: 0;
+  list-style: none;
+}
