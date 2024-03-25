@@ -131,18 +131,6 @@ body {
   color: var(--color-muted);
 }
 
-/* A temporary box where the movies will go */
-.placeholder {
-  display: grid;
-  place-items: center;
-  min-height: 16rem;
-  padding: 2rem;
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius);
-  color: var(--color-muted);
-  text-align: center;
-}
-
 .notice {
   padding: 1rem 1.25rem;
   border: 1px solid var(--color-danger);

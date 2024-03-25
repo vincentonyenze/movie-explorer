@@ -1,0 +1,52 @@
+.skeleton-card {
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.skeleton-card__poster {
+  aspect-ratio: 2 / 3; /* exactly like a real poster */
+}
+
+.skeleton-card__body {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.85rem;
+}
+
+.skeleton-card__line {
+  height: 0.8rem;
+  border-radius: 999px;
+}
+
+.skeleton-card__line--short {
+  width: 40%;
+}
+
+/* A soft light sweeping across: "something is coming" */
+.skeleton {
+  background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--color-text) 7%, transparent) 50%,
+      transparent 70%
+    )
+    var(--color-surface-raised);
+  background-size: 250% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

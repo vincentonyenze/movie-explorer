@@ -2,8 +2,8 @@ import { useState } from "react";
 import { hasToken } from "./config.js";
 import Header from "./components/Header.jsx";
 import SearchBar from "./components/SearchBar.jsx";
-import MovieGrid from "./components/MovieGrid.jsx";
-import { sampleMovies } from "./data/sampleMovies.js";
+import DiscoverView from "./views/DiscoverView.jsx";
+import FavouritesView from "./views/FavouritesView.jsx";
 
 function App() {
   // Which page is showing. No router yet (that's Project 17): one piece of
@@ -29,8 +29,6 @@ function App() {
     );
   }
 
-  const movies = isDiscover ? sampleMovies : favourites;
-
   return (
     <div className="app">
       <Header view={view} onViewChange={setView} favouriteCount={favourites.length} />
@@ -51,12 +49,14 @@ function App() {
             <strong>No TMDB token found.</strong> Copy <code>.env.example</code> to{" "}
             <code>.env.local</code>, paste your token, then restart <code>npm run dev</code>.
           </div>
-        ) : movies.length > 0 ? (
-          <MovieGrid movies={movies} favouriteIds={favouriteIds} onToggleFavourite={toggleFavourite} />
+        ) : isDiscover ? (
+          <DiscoverView favouriteIds={favouriteIds} onToggleFavourite={toggleFavourite} />
         ) : (
-          <div className="placeholder">
-            <p>No favourites yet. Tap ♡ on a movie to save it here.</p>
-          </div>
+          <FavouritesView
+            favourites={favourites}
+            favouriteIds={favouriteIds}
+            onToggleFavourite={toggleFavourite}
+          />
         )}
       </main>
 
