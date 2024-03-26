@@ -25,6 +25,12 @@ export class TmdbError extends Error {
   }
 }
 
+// True when a request was cancelled on purpose (controller.abort()).
+// That's not a failure, so there's nothing to show the user.
+export function isAbortError(error) {
+  return error?.name === "AbortError";
+}
+
 // A friendly message for each kind of failure
 function messageFor(status) {
   if (status === 401) return "TMDB rejected the token. Check VITE_TMDB_TOKEN in .env.local.";
@@ -61,7 +67,7 @@ export async function tmdbFetch(path, params = {}, { signal } = {}) {
   } catch (error) {
     // A cancelled request isn't a failure: pass it on untouched, so the
     // caller can recognise it (error.name === "AbortError") and ignore it
-    if (error.name === "AbortError") throw error;
+    if (isAbortError(error)) throw error;
     // fetch() only throws when the request never got an answer: offline,
     // DNS failure, blocked. (A 404 or 500 IS an answer, see below.)
     throw new TmdbError("Can't reach TMDB. Check your internet connection.");

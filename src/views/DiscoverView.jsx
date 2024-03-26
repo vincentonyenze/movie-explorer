@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getPopularMovies, TmdbError } from "../api/tmdb.js";
+import { getPopularMovies, isAbortError, TmdbError } from "../api/tmdb.js";
 import MovieGrid from "../components/MovieGrid.jsx";
 import MovieGridSkeleton from "../components/MovieGridSkeleton.jsx";
 import StatusMessage from "../components/StatusMessage.jsx";
@@ -26,11 +26,25 @@ function DiscoverView({ favouriteIds, onToggleFavourite }) {
   // once"; no list at all would mean "after EVERY render", which, with a
   // setResult inside, would loop forever.
   useEffect(() => {
-    getPopularMovies()
+    // A controller can cancel the request it's given the signal of
+    const controller = new AbortController();
+
+    getPopularMovies({ signal: controller.signal })
       .then((page) => setResult({ status: "success", movies: page.movies, error: null }))
-      .catch((error) => setResult({ status: "error", movies: [], error }));
-    // ⚠ Something is still missing here: nothing happens if this component
-    // goes away before the answer arrives. That's Step 6.
+      .catch((error) => {
+        // Cancelled on purpose by the cleanup below: nobody is waiting for
+        // this answer any more, so do nothing
+        if (isAbortError(error)) return;
+        setResult({ status: "error", movies: [], error });
+      });
+
+    // CLEANUP: the function an effect returns. React calls it
+    //   - before running the effect again (attempt changed: Try again)
+    //   - when the component leaves the page (you switched to Favourites)
+    // Here it cancels the request, so an old answer can never land on a
+    // page that has moved on. (StrictMode in development runs every effect,
+    // its cleanup, then the effect again, to check this exists.)
+    return () => controller.abort();
   }, [attempt]);
 
   function retry() {
