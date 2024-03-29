@@ -131,6 +131,12 @@ body {
   color: var(--color-muted);
 }
 
+.results-count {
+  margin: -0.75rem 0 1rem;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
 .notice {
   padding: 1rem 1.25rem;
   border: 1px solid var(--color-danger);

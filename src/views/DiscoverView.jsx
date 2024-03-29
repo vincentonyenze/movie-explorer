@@ -1,20 +1,34 @@
-import { getPopularMovies, TmdbError } from "../api/tmdb.js";
+import { useCallback } from "react";
+import { getPopularMovies, searchMovies, TmdbError } from "../api/tmdb.js";
+import { useDebounce } from "../hooks/useDebounce.js";
 import { useFetch } from "../hooks/useFetch.js";
 import MovieGrid from "../components/MovieGrid.jsx";
 import MovieGridSkeleton from "../components/MovieGridSkeleton.jsx";
 import StatusMessage from "../components/StatusMessage.jsx";
 
-// Outside the component: created once, so it's the SAME function on every
-// render, and useFetch only loads once. (Written inside the component, it
-// would be a new function each render, and useFetch would load forever.)
-const loadPopular = (signal) => getPopularMovies({ signal });
+// Popular movies, or search results when there's something in the box.
+//
+// query: what's typed in the search box, on every key press (App owns it)
+function DiscoverView({ query, favouriteIds, onToggleFavourite }) {
+  // Wait for a pause in typing. Spaces at the ends don't count: "dune "
+  // is the same search as "dune", so it doesn't start a new one.
+  const search = useDebounce(query.trim(), 400);
 
-// Popular movies from TMDB.
-function DiscoverView({ favouriteIds, onToggleFavourite }) {
-  // All the loading, error, cancelling and retrying from Steps 5-6, now in
-  // one line. The component is left with what's special about it: what to
-  // load, and what to show.
-  const { status, data, error, retry } = useFetch(loadPopular);
+  // useCallback gives back the SAME function on every render, until
+  // something in its list changes. So useFetch sees a new fetcher (and
+  // loads) only when the debounced search changes, not on every render.
+  //
+  // (Step 7 kept loadPopular outside the component instead. That works
+  // when the function needs nothing from the component; this one needs
+  // `search`, so it has to live inside.)
+  const loadMovies = useCallback(
+    (signal) => (search ? searchMovies({ query: search, signal }) : getPopularMovies({ signal })),
+    [search]
+  );
+
+  // Everything from Steps 5-7 still applies: when the search changes, the
+  // old request is cancelled and the skeleton shows until the new answer
+  const { status, data, error, retry } = useFetch(loadMovies);
 
   if (status === "loading") return <MovieGridSkeleton />;
 
@@ -35,7 +49,14 @@ function DiscoverView({ favouriteIds, onToggleFavourite }) {
   }
 
   if (data.movies.length === 0) {
-    return (
+    return search ? (
+      // role="status" so screen reader users hear that the search found nothing
+      <div role="status">
+        <StatusMessage icon="🔍" title={`No movies match “${search}”`}>
+          Check the spelling, or try fewer words.
+        </StatusMessage>
+      </div>
+    ) : (
       <StatusMessage icon="🍿" title="No movies here">
         TMDB didn't return any movies. Try again later.
       </StatusMessage>
@@ -43,7 +64,16 @@ function DiscoverView({ favouriteIds, onToggleFavourite }) {
   }
 
   return (
-    <MovieGrid movies={data.movies} favouriteIds={favouriteIds} onToggleFavourite={onToggleFavourite} />
+    <>
+      {search && (
+        // Announced when results arrive, so screen reader users know the
+        // page changed while they were typing
+        <p className="results-count" role="status">
+          {data.totalResults.toLocaleString()} {data.totalResults === 1 ? "movie" : "movies"} found
+        </p>
+      )}
+      <MovieGrid movies={data.movies} favouriteIds={favouriteIds} onToggleFavourite={onToggleFavourite} />
+    </>
   );
 }
 

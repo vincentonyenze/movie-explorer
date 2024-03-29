@@ -16,6 +16,7 @@ function App() {
   const [favourites, setFavourites] = useState([]);
 
   const isDiscover = view === "discover";
+  const searchText = query.trim();
 
   // Derived: a Set of saved ids, so every card can check "is this saved?"
   // with one quick has(), instead of searching the list each time
@@ -36,9 +37,15 @@ function App() {
       <main className="page container">
         <div className="page__header">
           <div>
-            <h1 className="page__title">{isDiscover ? "Popular movies" : "Your favourites"}</h1>
+            <h1 className="page__title">
+              {!isDiscover ? "Your favourites" : searchText ? "Search results" : "Popular movies"}
+            </h1>
             <p className="page__subtitle">
-              {isDiscover ? "What everyone is watching right now" : "Movies you've saved"}
+              {!isDiscover
+                ? "Movies you've saved"
+                : searchText
+                  ? `Movies matching “${searchText}”`
+                  : "What everyone is watching right now"}
             </p>
           </div>
           {isDiscover && <SearchBar value={query} onChange={setQuery} />}
@@ -50,7 +57,7 @@ function App() {
             <code>.env.local</code>, paste your token, then restart <code>npm run dev</code>.
           </div>
         ) : isDiscover ? (
-          <DiscoverView favouriteIds={favouriteIds} onToggleFavourite={toggleFavourite} />
+          <DiscoverView query={query} favouriteIds={favouriteIds} onToggleFavourite={toggleFavourite} />
         ) : (
           <FavouritesView
             favourites={favourites}
