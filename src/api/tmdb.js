@@ -102,16 +102,36 @@ export async function searchMovies({ query, page = 1, signal } = {}) {
   return toMoviePage(data);
 }
 
+// The sort orders Discover offers, in TMDB's own names
+export const SORT_OPTIONS = [
+  { value: "popularity.desc", label: "Popular" },
+  { value: "vote_average.desc", label: "Top rated" },
+  { value: "primary_release_date.desc", label: "Newest" },
+  { value: "vote_count.desc", label: "Most voted" },
+];
+
+export const DEFAULT_SORT = SORT_OPTIONS[0].value;
+
+// "2026-10-20": today, in the format TMDB uses for dates
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Minimum votes per sort. Without one, "Top rated" is full of films with a
+// single 10/10 vote, and "Newest" with films nobody has seen yet.
+const MIN_VOTES = { "vote_average.desc": 300, "primary_release_date.desc": 20 };
+
 // Browse with filters: a genre and/or a sort order
-//   sortBy: TMDB's names, e.g. "popularity.desc", "vote_average.desc"
-export async function discoverMovies({ genreId, sortBy = "popularity.desc", page = 1, signal } = {}) {
+//   sortBy: one of SORT_OPTIONS' values
+export async function discoverMovies({ genreId, sortBy = DEFAULT_SORT, page = 1, signal } = {}) {
   const params = {
     with_genres: genreId,
     sort_by: sortBy,
     page,
     include_adult: false,
-    // Without this, "highest rated" is full of films with 1 vote of 10/10
-    "vote_count.gte": sortBy.startsWith("vote_average") ? 300 : undefined,
+    "vote_count.gte": MIN_VOTES[sortBy],
+    // "Newest" means released already, not announced for 2031
+    "primary_release_date.lte": sortBy === "primary_release_date.desc" ? today() : undefined,
   };
   return toMoviePage(await tmdbFetch("/discover/movie", params, { signal }));
 }

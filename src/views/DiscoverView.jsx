@@ -1,34 +1,89 @@
 import { useCallback } from "react";
-import { getPopularMovies, searchMovies, TmdbError } from "../api/tmdb.js";
+import { discoverMovies, getGenres, searchMovies, SORT_OPTIONS, TmdbError } from "../api/tmdb.js";
 import { useDebounce } from "../hooks/useDebounce.js";
 import { useFetch } from "../hooks/useFetch.js";
+import DiscoverFilters from "../components/DiscoverFilters.jsx";
 import MovieGrid from "../components/MovieGrid.jsx";
 import MovieGridSkeleton from "../components/MovieGridSkeleton.jsx";
+import SearchBar from "../components/SearchBar.jsx";
 import StatusMessage from "../components/StatusMessage.jsx";
 
-// Popular movies, or search results when there's something in the box.
+// The genre list never changes while the app runs: a fixed fetcher,
+// defined outside the component (Step 7)
+const loadGenres = (signal) => getGenres({ signal });
+
+// Browse movies by genre and sort order, or search them.
 //
-// query: what's typed in the search box, on every key press (App owns it)
-function DiscoverView({ query, favouriteIds, onToggleFavourite }) {
-  // Wait for a pause in typing. Spaces at the ends don't count: "dune "
-  // is the same search as "dune", so it doesn't start a new one.
-  const search = useDebounce(query.trim(), 400);
+// filters: { query, genreId, sortBy }. App owns them, so they survive a
+//   visit to Favourites.
+// onFiltersChange(changes): e.g. onFiltersChange({ sortBy: "vote_average.desc" })
+// onResetFilters(): back to all genres, popular first
+function DiscoverView({ filters, onFiltersChange, onResetFilters, favouriteIds, onToggleFavourite }) {
+  const { query, genreId, sortBy } = filters;
+  const searchText = query.trim(); // what's typed now, for the heading
+  const search = useDebounce(searchText, 400); // what we search for, after a pause
 
-  // useCallback gives back the SAME function on every render, until
-  // something in its list changes. So useFetch sees a new fetcher (and
-  // loads) only when the debounced search changes, not on every render.
-  //
-  // (Step 7 kept loadPopular outside the component instead. That works
-  // when the function needs nothing from the component; this one needs
-  // `search`, so it has to live inside.)
+  // Two separate requests, each with its own loading state: the genre list
+  // loading (or failing) never holds up the movies, and the other way round
+  const genres = useFetch(loadGenres);
+
+  // Now the fetcher depends on THREE values. All three are in the list:
+  // change any of them and useFetch loads again. Forget one, and changing
+  // it would quietly do nothing; the exhaustive-deps lint rule catches that.
   const loadMovies = useCallback(
-    (signal) => (search ? searchMovies({ query: search, signal }) : getPopularMovies({ signal })),
-    [search]
+    (signal) =>
+      search
+        ? searchMovies({ query: search, signal }) // search can't filter or sort
+        : discoverMovies({ genreId, sortBy, signal }),
+    [search, genreId, sortBy]
   );
+  const movies = useFetch(loadMovies);
 
-  // Everything from Steps 5-7 still applies: when the search changes, the
-  // old request is cancelled and the skeleton shows until the new answer
-  const { status, data, error, retry } = useFetch(loadMovies);
+  // ===== The heading: "Top rated comedy movies" =====
+  const genreList = genres.data ?? [];
+  const genreName = genreList.find((genre) => String(genre.id) === genreId)?.name;
+  const sortLabel = SORT_OPTIONS.find((option) => option.value === sortBy)?.label ?? "Popular";
+  const title = searchText
+    ? "Search results"
+    : `${sortLabel} ${genreName ? genreName.toLowerCase() + " " : ""}movies`;
+  const subtitle = searchText ? `Movies matching “${searchText}”` : "Browse by genre, or search for any movie";
+
+  return (
+    <>
+      <div className="page__header">
+        <div>
+          <h1 className="page__title">{title}</h1>
+          <p className="page__subtitle">{subtitle}</p>
+        </div>
+        <SearchBar value={query} onChange={(value) => onFiltersChange({ query: value })} />
+      </div>
+
+      {/* Search ignores genre and sort (TMDB's /search can't do them), so
+          the menus step aside rather than pretend to work */}
+      {searchText ? null : (
+        <DiscoverFilters
+          genres={genreList}
+          genreId={genreId}
+          sortBy={sortBy}
+          onChange={onFiltersChange}
+          onReset={onResetFilters}
+          canReset={genreId !== "" || sortBy !== SORT_OPTIONS[0].value}
+        />
+      )}
+
+      <MovieResults
+        result={movies}
+        search={search}
+        favouriteIds={favouriteIds}
+        onToggleFavourite={onToggleFavourite}
+      />
+    </>
+  );
+}
+
+// The part under the heading: skeleton, error, nothing found, or the grid
+function MovieResults({ result, search, favouriteIds, onToggleFavourite }) {
+  const { status, data, error, retry } = result;
 
   if (status === "loading") return <MovieGridSkeleton />;
 
@@ -49,17 +104,19 @@ function DiscoverView({ query, favouriteIds, onToggleFavourite }) {
   }
 
   if (data.movies.length === 0) {
-    return search ? (
-      // role="status" so screen reader users hear that the search found nothing
+    return (
+      // role="status" so screen reader users hear that nothing was found
       <div role="status">
-        <StatusMessage icon="🔍" title={`No movies match “${search}”`}>
-          Check the spelling, or try fewer words.
-        </StatusMessage>
+        {search ? (
+          <StatusMessage icon="🔍" title={`No movies match “${search}”`}>
+            Check the spelling, or try fewer words.
+          </StatusMessage>
+        ) : (
+          <StatusMessage icon="🍿" title="No movies here">
+            Nothing matches these filters. Try another genre.
+          </StatusMessage>
+        )}
       </div>
-    ) : (
-      <StatusMessage icon="🍿" title="No movies here">
-        TMDB didn't return any movies. Try again later.
-      </StatusMessage>
     );
   }
 
