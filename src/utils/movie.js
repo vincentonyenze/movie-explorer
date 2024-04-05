@@ -19,3 +19,16 @@ export function formatRating(average, count) {
   if (!count) return "";
   return average.toFixed(1);
 }
+
+// Joins lists of movies, keeping only the FIRST of any repeated id.
+// TMDB's lists shift while you browse (a movie climbs from page 2 to page
+// 1 between two requests), so the same movie can arrive twice. Shown
+// twice, it would also give React two items with the same key.
+export function uniqueById(movies) {
+  const seen = new Set();
+  return movies.filter((movie) => {
+    if (seen.has(movie.id)) return false;
+    seen.add(movie.id);
+    return true;
+  });
+}

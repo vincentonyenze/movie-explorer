@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { discoverMovies, getGenres, searchMovies, SORT_OPTIONS, TmdbError } from "../api/tmdb.js";
 import { useDebounce } from "../hooks/useDebounce.js";
 import { useFetch } from "../hooks/useFetch.js";
+import { usePagedMovies } from "../hooks/usePagedMovies.js";
 import DiscoverFilters from "../components/DiscoverFilters.jsx";
 import MovieGrid from "../components/MovieGrid.jsx";
 import MovieGridSkeleton from "../components/MovieGridSkeleton.jsx";
@@ -27,17 +28,18 @@ function DiscoverView({ filters, onFiltersChange, onResetFilters, favouriteIds, 
   // loading (or failing) never holds up the movies, and the other way round
   const genres = useFetch(loadGenres);
 
-  // Now the fetcher depends on THREE values. All three are in the list:
-  // change any of them and useFetch loads again. Forget one, and changing
-  // it would quietly do nothing; the exhaustive-deps lint rule catches that.
-  const loadMovies = useCallback(
-    (signal) =>
+  // Loads ONE page of the current list. It depends on THREE values, all in
+  // the list: change any of them and it's a new list, starting again from
+  // page 1. Forget one, and changing it would quietly do nothing; the
+  // exhaustive-deps lint rule catches that.
+  const loadPage = useCallback(
+    (page, signal) =>
       search
-        ? searchMovies({ query: search, signal }) // search can't filter or sort
-        : discoverMovies({ genreId, sortBy, signal }),
+        ? searchMovies({ query: search, page, signal }) // search can't filter or sort
+        : discoverMovies({ genreId, sortBy, page, signal }),
     [search, genreId, sortBy]
   );
-  const movies = useFetch(loadMovies);
+  const movies = usePagedMovies(loadPage);
 
   // ===== The heading: "Top rated comedy movies" =====
   const genreList = genres.data ?? [];
@@ -81,16 +83,18 @@ function DiscoverView({ filters, onFiltersChange, onResetFilters, favouriteIds, 
   );
 }
 
+// "Can't reach TMDB..." for our own errors, a general message for bugs
+function errorMessage(error) {
+  return error instanceof TmdbError ? error.message : "Something unexpected went wrong.";
+}
+
 // The part under the heading: skeleton, error, nothing found, or the grid
 function MovieResults({ result, search, favouriteIds, onToggleFavourite }) {
-  const { status, data, error, retry } = result;
+  const { status, error, retry, movies, totalResults } = result;
 
   if (status === "loading") return <MovieGridSkeleton />;
 
   if (status === "error") {
-    // Our own errors have a message written for people; anything else
-    // (a bug) gets a general one
-    const message = error instanceof TmdbError ? error.message : "Something unexpected went wrong.";
     return (
       <StatusMessage
         tone="error"
@@ -98,12 +102,12 @@ function MovieResults({ result, search, favouriteIds, onToggleFavourite }) {
         title="Couldn't load movies"
         action={{ label: "Try again", onClick: retry }}
       >
-        {message}
+        {errorMessage(error)}
       </StatusMessage>
     );
   }
 
-  if (data.movies.length === 0) {
+  if (movies.length === 0) {
     return (
       // role="status" so screen reader users hear that nothing was found
       <div role="status">
@@ -126,11 +130,48 @@ function MovieResults({ result, search, favouriteIds, onToggleFavourite }) {
         // Announced when results arrive, so screen reader users know the
         // page changed while they were typing
         <p className="results-count" role="status">
-          {data.totalResults.toLocaleString()} {data.totalResults === 1 ? "movie" : "movies"} found
+          {totalResults.toLocaleString()} {totalResults === 1 ? "movie" : "movies"} found
         </p>
       )}
-      <MovieGrid movies={data.movies} favouriteIds={favouriteIds} onToggleFavourite={onToggleFavourite} />
+      <MovieGrid movies={movies} favouriteIds={favouriteIds} onToggleFavourite={onToggleFavourite} />
+      <LoadMore result={result} />
     </>
+  );
+}
+
+// "Showing 40 of 1,117" and the Load more button
+function LoadMore({ result }) {
+  const { movies, totalResults, hasMore, loadMore, loadingMore, loadMoreError } = result;
+
+  return (
+    <div className="load-more">
+      {/* role="status": "Showing 40 of 1,117" is read out when more arrive */}
+      <p className="load-more__count" role="status">
+        {hasMore
+          ? `Showing ${movies.length.toLocaleString()} of ${totalResults.toLocaleString()}`
+          : `That's all ${movies.length.toLocaleString()}`}
+      </p>
+
+      {loadMoreError && (
+        <p className="load-more__error" role="alert">
+          {errorMessage(loadMoreError)}
+        </p>
+      )}
+
+      {hasMore && (
+        <button
+          type="button"
+          className="load-more__button"
+          onClick={loadMore}
+          // aria-disabled instead of disabled: a disabled button loses
+          // keyboard focus, and you'd have to find your place again.
+          // loadMore() already ignores clicks while loading.
+          aria-disabled={loadingMore}
+        >
+          {loadingMore ? "Loading…" : loadMoreError ? "Try again" : "Load more"}
+        </button>
+      )}
+    </div>
   );
 }
 

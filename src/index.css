@@ -157,6 +157,42 @@ body {
   font-size: 0.9rem;
 }
 
+/* ===== Load more ===== */
+.load-more {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.load-more__count {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.load-more__error {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.load-more__button {
+  min-width: 11rem;
+  padding: 0.75rem 1.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-weight: 700;
+}
+
+.load-more__button:hover {
+  border-color: var(--color-accent);
+}
+
+.load-more__button[aria-disabled="true"] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
 .notice {
   padding: 1rem 1.25rem;
   border: 1px solid var(--color-danger);
