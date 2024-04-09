@@ -19,7 +19,7 @@ const loadGenres = (signal) => getGenres({ signal });
 //   visit to Favourites.
 // onFiltersChange(changes): e.g. onFiltersChange({ sortBy: "vote_average.desc" })
 // onResetFilters(): back to all genres, popular first
-function DiscoverView({ filters, onFiltersChange, onResetFilters, favouriteIds, onToggleFavourite }) {
+function DiscoverView({ filters, onFiltersChange, onResetFilters, favouriteIds, onToggleFavourite, onSelect }) {
   const { query, genreId, sortBy } = filters;
   const searchText = query.trim(); // what's typed now, for the heading
   const search = useDebounce(searchText, 400); // what we search for, after a pause
@@ -78,6 +78,7 @@ function DiscoverView({ filters, onFiltersChange, onResetFilters, favouriteIds, 
         search={search}
         favouriteIds={favouriteIds}
         onToggleFavourite={onToggleFavourite}
+        onSelect={onSelect}
       />
     </>
   );
@@ -89,7 +90,7 @@ function errorMessage(error) {
 }
 
 // The part under the heading: skeleton, error, nothing found, or the grid
-function MovieResults({ result, search, favouriteIds, onToggleFavourite }) {
+function MovieResults({ result, search, favouriteIds, onToggleFavourite, onSelect }) {
   const { status, error, retry, movies, totalResults } = result;
 
   if (status === "loading") return <MovieGridSkeleton />;
@@ -133,7 +134,12 @@ function MovieResults({ result, search, favouriteIds, onToggleFavourite }) {
           {totalResults.toLocaleString()} {totalResults === 1 ? "movie" : "movies"} found
         </p>
       )}
-      <MovieGrid movies={movies} favouriteIds={favouriteIds} onToggleFavourite={onToggleFavourite} />
+      <MovieGrid
+        movies={movies}
+        favouriteIds={favouriteIds}
+        onToggleFavourite={onToggleFavourite}
+        onSelect={onSelect}
+      />
       <LoadMore result={result} />
     </>
   );

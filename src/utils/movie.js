@@ -32,3 +32,19 @@ export function uniqueById(movies) {
     return true;
   });
 }
+
+// 136 -> "2h 16m", 45 -> "45m". TMDB uses 0 or null when it doesn't know.
+export function formatRuntime(minutes) {
+  if (!minutes) return "";
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return hours ? `${hours}h ${rest}m` : `${rest}m`;
+}
+
+// The best trailer from TMDB's videos: a YouTube trailer, official ones
+// first. Returns its YouTube address, or null if there isn't one.
+export function trailerUrl(videos = []) {
+  const trailers = videos.filter((video) => video.site === "YouTube" && video.type === "Trailer");
+  const best = trailers.find((video) => video.official) ?? trailers[0];
+  return best ? `https://www.youtube.com/watch?v=${best.key}` : null;
+}

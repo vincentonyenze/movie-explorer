@@ -6,7 +6,7 @@ import "./MovieGrid.css";
 //
 // favouriteIds: a Set of saved movie ids, so each card can be checked
 // quickly (set.has(id)) instead of searching the whole favourites list
-function MovieGrid({ movies, favouriteIds, onToggleFavourite }) {
+function MovieGrid({ movies, favouriteIds, onToggleFavourite, onSelect }) {
   return (
     <ul className="movie-grid">
       {movies.map((movie) => (
@@ -16,6 +16,7 @@ function MovieGrid({ movies, favouriteIds, onToggleFavourite }) {
             movie={movie}
             isFavourite={favouriteIds.has(movie.id)}
             onToggleFavourite={onToggleFavourite}
+            onSelect={onSelect}
           />
         </li>
       ))}

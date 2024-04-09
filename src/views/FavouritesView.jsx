@@ -2,7 +2,7 @@ import MovieGrid from "../components/MovieGrid.jsx";
 import StatusMessage from "../components/StatusMessage.jsx";
 
 // The movies you've saved. No loading here: they're already in memory.
-function FavouritesView({ favourites, favouriteIds, onToggleFavourite }) {
+function FavouritesView({ favourites, favouriteIds, onToggleFavourite, onSelect }) {
   return (
     <>
       <div className="page__header">
@@ -19,7 +19,12 @@ function FavouritesView({ favourites, favouriteIds, onToggleFavourite }) {
           Tap the heart on any movie to save it here.
         </StatusMessage>
       ) : (
-        <MovieGrid movies={favourites} favouriteIds={favouriteIds} onToggleFavourite={onToggleFavourite} />
+        <MovieGrid
+          movies={favourites}
+          favouriteIds={favouriteIds}
+          onToggleFavourite={onToggleFavourite}
+          onSelect={onSelect}
+        />
       )}
     </>
   );

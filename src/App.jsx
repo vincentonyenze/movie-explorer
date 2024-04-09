@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DEFAULT_SORT } from "./api/tmdb.js";
 import { hasToken } from "./config.js";
 import Header from "./components/Header.jsx";
+import MovieDialog from "./components/MovieDialog.jsx";
 import DiscoverView from "./views/DiscoverView.jsx";
 import FavouritesView from "./views/FavouritesView.jsx";
 
@@ -20,6 +21,9 @@ function App() {
   // Favourites view can show them without asking the API again.
   // (Only in memory for now: saving them comes in Step 12.)
   const [favourites, setFavourites] = useState([]);
+  // The movie whose details are open, or null. Lives here, above both
+  // views, because a movie can be opened from either.
+  const [selectedMovie, setSelectedMovie] = useState(null);
 
   // Derived: a Set of saved ids, so every card can check "is this saved?"
   // with one quick has(), instead of searching the list each time
@@ -63,15 +67,29 @@ function App() {
             onResetFilters={resetFilters}
             favouriteIds={favouriteIds}
             onToggleFavourite={toggleFavourite}
+            onSelect={setSelectedMovie}
           />
         ) : (
           <FavouritesView
             favourites={favourites}
             favouriteIds={favouriteIds}
             onToggleFavourite={toggleFavourite}
+            onSelect={setSelectedMovie}
           />
         )}
       </main>
+
+      {/* Only on the page while a movie is open. key: a different movie is
+          a fresh dialog with fresh state, never the last one's leftovers. */}
+      {selectedMovie && (
+        <MovieDialog
+          key={selectedMovie.id}
+          movie={selectedMovie}
+          isFavourite={favouriteIds.has(selectedMovie.id)}
+          onToggleFavourite={toggleFavourite}
+          onClose={() => setSelectedMovie(null)}
+        />
+      )}
 
       <footer className="footer">
         <div className="container">

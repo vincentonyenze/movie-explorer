@@ -11,7 +11,8 @@ import "./MovieCard.css";
 // movie: a movie in TMDB's shape ({ id, title, poster_path, ... })
 // isFavourite: whether it's saved
 // onToggleFavourite(movie): asks the parent to save or unsave it
-function MovieCard({ movie, isFavourite, onToggleFavourite }) {
+// onSelect(movie): asks the parent to show its details
+function MovieCard({ movie, isFavourite, onToggleFavourite, onSelect }) {
   // If the poster fails to load (a broken link, or offline), show the
   // fallback instead of the browser's broken-image icon
   const [imageFailed, setImageFailed] = useState(false);
@@ -65,7 +66,15 @@ function MovieCard({ movie, isFavourite, onToggleFavourite }) {
       </div>
 
       <div className="movie-card__body">
-        <h3 className="movie-card__title">{movie.title}</h3>
+        {/* The title is the button that opens the details. Its ::after (in
+            the CSS) stretches over the whole card, so clicking anywhere on
+            the card works, while the page still has ONE clear button per
+            movie for keyboards and screen readers. */}
+        <h3 className="movie-card__title">
+          <button type="button" className="movie-card__open" onClick={() => onSelect(movie)}>
+            <span className="movie-card__title-text">{movie.title}</span>
+          </button>
+        </h3>
         {year && <p className="movie-card__year">{year}</p>}
       </div>
     </article>

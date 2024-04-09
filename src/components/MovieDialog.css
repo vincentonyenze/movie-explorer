@@ -1,0 +1,256 @@
+/* Stop the page behind from scrolling while a dialog is open */
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
+.movie-dialog {
+  width: min(56rem, 100% - 2rem);
+  max-height: calc(100% - 2rem);
+  /* Browsers centre a modal dialog with margin: auto, but the reset in
+     index.css (* { margin: 0 }) removes it: put it back */
+  margin: auto;
+  padding: 0; /* the content fills it, so backdrop clicks are outside it */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.5);
+}
+
+/* The dark layer behind a modal dialog */
+.movie-dialog::backdrop {
+  background: rgb(5 6 10 / 0.75);
+  backdrop-filter: blur(3px);
+}
+
+.movie-dialog[open] {
+  animation: dialog-in 0.2s ease-out;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+
+.movie-dialog__content {
+  position: relative;
+}
+
+/* ===== Top: backdrop picture, poster and facts ===== */
+.movie-dialog__backdrop {
+  width: 100%;
+  height: clamp(9rem, 30vw, 15rem);
+  object-fit: cover;
+  /* Fades into the dialog's background */
+  mask-image: linear-gradient(to bottom, black 40%, transparent);
+}
+
+.movie-dialog__close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.65);
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.movie-dialog__close:hover {
+  background: rgb(0 0 0 / 0.9);
+}
+
+.movie-dialog__main {
+  display: grid;
+  grid-template-columns: clamp(7rem, 22vw, 11rem) 1fr;
+  gap: clamp(1rem, 3vw, 1.75rem);
+  padding: 0 clamp(1rem, 4vw, 2rem);
+}
+
+/* With a backdrop above, the poster overlaps it a little */
+.movie-dialog__backdrop + .movie-dialog__close + .movie-dialog__main {
+  margin-top: -4rem;
+}
+
+/* Without one, leave room for the close button */
+.movie-dialog__content > .movie-dialog__close:first-child + .movie-dialog__main {
+  padding-top: 3.5rem;
+}
+
+.movie-dialog__poster {
+  position: relative; /* above the faded backdrop */
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-small);
+  box-shadow: var(--shadow);
+}
+
+.movie-dialog__info {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  padding-top: 3rem;
+}
+
+.movie-dialog__title {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  line-height: 1.15;
+}
+
+.movie-dialog__facts {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.movie-dialog__genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.movie-dialog__genres li {
+  padding: 0.15rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+.movie-dialog__tagline {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.movie-dialog__overview {
+  max-width: 60ch;
+}
+
+.movie-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.movie-dialog__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.movie-dialog__button:hover {
+  border-color: var(--color-accent);
+}
+
+.movie-dialog__button--primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.movie-dialog__button--primary:hover {
+  background: var(--color-accent-hover);
+}
+
+/* ===== Bottom: cast ===== */
+.movie-dialog__section {
+  padding: 1.5rem clamp(1rem, 4vw, 2rem) 2rem;
+}
+
+.movie-dialog__heading {
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+/* One row you scroll sideways, like streaming apps */
+.movie-dialog__cast,
+.movie-dialog__cast-skeleton {
+  display: grid;
+  grid-auto-columns: 7rem;
+  grid-auto-flow: column;
+  gap: 0.85rem;
+  padding: 0 0 0.5rem;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.person {
+  display: grid;
+  align-content: start;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.person__photo {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  margin-bottom: 0.3rem;
+  border-radius: var(--radius-small);
+  object-fit: cover;
+  background: var(--color-surface-raised);
+}
+
+.person__photo--empty {
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+}
+
+.person__name {
+  font-weight: 700;
+}
+
+.person__role {
+  color: var(--color-muted);
+}
+
+.movie-dialog__skeleton-person {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-small);
+}
+
+.movie-dialog__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-danger);
+}
+
+/* Phones: poster and text stack */
+@media (max-width: 560px) {
+  .movie-dialog__main {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-dialog__poster {
+    width: 7.5rem;
+  }
+
+  .movie-dialog__info {
+    padding-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .movie-dialog[open] {
+    animation: none;
+  }
+}
