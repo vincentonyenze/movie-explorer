@@ -3,6 +3,8 @@ import { DEFAULT_SORT } from "./api/tmdb.js";
 import { hasToken } from "./config.js";
 import Header from "./components/Header.jsx";
 import MovieDialog from "./components/MovieDialog.jsx";
+import { useLocalStorage } from "./hooks/useLocalStorage.js";
+import { cleanFavourites, FAVOURITES_KEY, NO_FAVOURITES, toFavourite } from "./utils/favourites.js";
 import DiscoverView from "./views/DiscoverView.jsx";
 import FavouritesView from "./views/FavouritesView.jsx";
 
@@ -18,9 +20,10 @@ function App() {
   // after a visit to Favourites.
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   // Saved movies, newest first. Whole movie objects, not just ids, so the
-  // Favourites view can show them without asking the API again.
-  // (Only in memory for now: saving them comes in Step 12.)
-  const [favourites, setFavourites] = useState([]);
+  // Favourites view can show them without asking the API again. Swapping
+  // useState for useLocalStorage is all it took to make them last: the
+  // rest of the app doesn't know or care where they're kept.
+  const [favourites, setFavourites] = useLocalStorage(FAVOURITES_KEY, NO_FAVOURITES, cleanFavourites);
   // The movie whose details are open, or null. Lives here, above both
   // views, because a movie can be opened from either.
   const [selectedMovie, setSelectedMovie] = useState(null);
@@ -43,7 +46,7 @@ function App() {
     setFavourites((current) =>
       current.some((saved) => saved.id === movie.id)
         ? current.filter((saved) => saved.id !== movie.id)
-        : [movie, ...current]
+        : [toFavourite(movie), ...current]
     );
   }
 
